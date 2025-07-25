@@ -12,10 +12,10 @@
     <style>
         body {
             font-family: 'Inter', sans-serif;
-            touch-action: manipulation; /* Allow touches on buttons but prevent other gestures */
+            touch-action: manipulation;
         }
         .test-canvas {
-            background-color: #f3f4f6; /* Gray 100 */
+            background-color: #f3f4f6;
             border-radius: 0.5rem;
             width: 100%;
             height: 100%;
@@ -24,7 +24,7 @@
             transition: all 0.3s ease;
         }
         .tab-button.active {
-            background-color: #3b82f6; /* Blue 600 */
+            background-color: #3b82f6;
             color: white;
             font-weight: 600;
         }
@@ -53,11 +53,27 @@
             position: absolute;
             border-radius: 50%;
         }
+        #focus-mode #focus-content > div {
+            width: 100%;
+            height: 100%;
+        }
+        .countdown-overlay {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 5rem;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            z-index: 10;
+        }
     </style>
 </head>
 <body class="bg-gray-100 min-h-screen">
 
-    <div class="container mx-auto p-4 md:p-8 max-w-5xl">
+    <div id="main-container" class="container mx-auto p-4 md:p-8 max-w-5xl">
         <header class="text-center mb-8">
             <h1 class="text-3xl md:text-4xl font-bold text-gray-800">Centro de Pruebas Psicotécnicas</h1>
             <p class="text-gray-600 mt-2">Simulador para la preparación del examen de conducir.</p>
@@ -75,24 +91,30 @@
             <div id="category-psicomotriz" class="test-card active">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <!-- Test: Coordinación Bimanual -->
-                    <div class="bg-white p-6 rounded-xl shadow-md">
+                    <div class="bg-white p-6 rounded-xl shadow-md flex flex-col">
                         <h3 class="text-xl font-bold mb-2">1. Test de Coordinación Bimanual</h3>
-                        <p class="text-gray-600 mb-4">Usa <kbd class="font-mono bg-gray-200 px-2 py-1 rounded">A</kbd>/<kbd class="font-mono bg-gray-200 px-2 py-1 rounded">D</kbd> para la bola azul (izquierda) y <kbd class="font-mono bg-gray-200 px-2 py-1 rounded">←</kbd>/<kbd class="font-mono bg-gray-200 px-2 py-1 rounded">→</kbd> para la roja (derecha). Mantenlas en sus carriles.</p>
-                        <div class="aspect-video bg-gray-200 rounded-lg mb-4 relative">
-                            <canvas id="bimanualCanvas" class="test-canvas"></canvas>
+                        <p class="text-gray-600 mb-4">Usa <kbd class="font-mono bg-gray-200 px-2 py-1 rounded">A</kbd>/<kbd class="font-mono bg-gray-200 px-2 py-1 rounded">D</kbd> y <kbd class="font-mono bg-gray-200 px-2 py-1 rounded">←</kbd>/<kbd class="font-mono bg-gray-200 px-2 py-1 rounded">→</kbd>. Mantenlas en sus carriles.</p>
+                        <div id="bimanual-placeholder" class="flex-grow">
+                            <div id="bimanual-interactive-area" class="aspect-video bg-gray-200 rounded-lg mb-4 relative">
+                                <canvas id="bimanualCanvas" class="test-canvas"></canvas>
+                                <div class="countdown-overlay hidden"></div>
+                            </div>
                         </div>
-                        <button id="startBimanual" class="w-full bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600">Empezar</button>
+                        <button id="startBimanual" class="start-button w-full bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600 mt-auto">Empezar</button>
                         <div id="bimanualResults" class="mt-4 text-center font-semibold"></div>
                     </div>
 
                     <!-- Test: Tiempo de Reacción -->
-                    <div class="bg-white p-6 rounded-xl shadow-md">
+                    <div class="bg-white p-6 rounded-xl shadow-md flex flex-col">
                         <h3 class="text-xl font-bold mb-2">2. Test de Tiempo de Reacción</h3>
                         <p class="text-gray-600 mb-4">Pulsa <kbd class="font-mono bg-gray-200 px-2 py-1 rounded">ESPACIO</kbd> en cuanto el círculo rojo aparezca. Se harán 5 intentos.</p>
-                        <div id="reactionTestArea" class="aspect-video bg-gray-800 rounded-lg mb-4 flex items-center justify-center text-white text-2xl font-bold">
-                            Pulsa "Empezar"
+                        <div id="reaction-placeholder" class="flex-grow">
+                            <div id="reactionTestArea" class="aspect-video bg-gray-800 rounded-lg mb-4 flex items-center justify-center text-white text-2xl font-bold relative">
+                                <span id="reaction-text">Pulsa "Empezar"</span>
+                                <div class="countdown-overlay hidden"></div>
+                            </div>
                         </div>
-                        <button id="startReaction" class="w-full bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600">Empezar</button>
+                        <button id="startReaction" class="start-button w-full bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600 mt-auto">Empezar</button>
                         <div id="reactionResults" class="mt-4 text-center font-semibold"></div>
                     </div>
                 </div>
@@ -133,12 +155,15 @@
                     <!-- Test: Campo Visual -->
                      <div class="bg-white p-6 rounded-xl shadow-md">
                         <h3 class="text-xl font-bold mb-2">3. Campo Visual</h3>
-                        <p class="text-gray-600 mb-4">Fija la vista en el punto central. Pulsa <kbd class="font-mono bg-gray-200 px-2 py-1 rounded">ESPACIO</kbd> cada vez que veas aparecer un punto en la periferia.</p>
-                        <div class="aspect-square bg-gray-800 rounded-lg mb-4 relative">
-                            <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-4 h-4 bg-white rounded-full"></div>
-                            <div id="visualFieldStimulus" class="absolute w-3 h-3 bg-yellow-300 rounded-full hidden"></div>
+                        <p class="text-gray-600 mb-4">Fija la vista en el punto central. Pulsa <kbd class="font-mono bg-gray-200 px-2 py-1 rounded">ESPACIO</kbd> cada vez que veas aparecer un punto.</p>
+                        <div id="visual-field-placeholder">
+                            <div id="visualFieldArea" class="aspect-square bg-gray-800 rounded-lg mb-4 relative">
+                                <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-4 h-4 bg-white rounded-full"></div>
+                                <div id="visualFieldStimulus" class="absolute w-3 h-3 bg-yellow-300 rounded-full hidden"></div>
+                                <div class="countdown-overlay hidden"></div>
+                            </div>
                         </div>
-                        <button id="startVisualField" class="w-full bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600">Empezar</button>
+                        <button id="startVisualField" class="start-button w-full bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600">Empezar</button>
                         <div id="visualFieldResult" class="mt-4 text-center font-semibold"></div>
                     </div>
                  </div>
@@ -150,17 +175,34 @@
                     <div class="bg-white p-6 rounded-xl shadow-md w-full max-w-md">
                         <h3 class="text-xl font-bold mb-2">1. Audiometría Básica</h3>
                         <p class="text-gray-600 mb-4">Ponte auriculares. Pulsa "Empezar" y luego pulsa el botón "OÍDO" cada vez que escuches un pitido. Se probarán ambos oídos.</p>
-                        <div id="audiometryArea" class="text-center my-8">
-                            <p id="audiometryStatus" class="text-2xl font-bold text-gray-700">Listo para empezar</p>
+                        <div id="audiometry-placeholder">
+                            <div id="audiometryArea" class="text-center my-8 relative">
+                                <p id="audiometryStatus" class="text-2xl font-bold text-gray-700">Pulsa "Empezar"</p>
+                                <div class="countdown-overlay hidden" style="color: #374151;"></div>
+                            </div>
                         </div>
-                        <button id="startAudiometry" class="w-full bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600 mb-2">Empezar Prueba</button>
-                        <button id="heardToneButton" class="w-full bg-green-500 text-white py-2 rounded-lg hover:bg-green-600 hidden">OÍDO</button>
+                        <button id="startAudiometry" class="start-button w-full bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600 mb-2">Empezar Prueba</button>
+                        <div id="audiometry-focus-controls" class="hidden">
+                            <button id="heardToneButton" class="w-full bg-green-500 text-white py-2 rounded-lg hover:bg-green-600">OÍDO</button>
+                        </div>
                         <div id="audiometryResult" class="mt-4 text-center font-semibold"></div>
                     </div>
                  </div>
             </div>
         </main>
     </div>
+
+    <!-- FOCUS MODE CONTAINER -->
+    <div id="focus-mode" class="fixed inset-0 bg-gray-900 p-4 md:p-8 flex-col items-center justify-center hidden z-50">
+        <div id="focus-content" class="w-full h-full flex-grow relative flex items-center justify-center">
+            <!-- Active test element will be moved here -->
+        </div>
+        <div id="focus-controls" class="mt-4">
+            <!-- Test-specific controls will be moved here -->
+        </div>
+        <button id="exit-focus-mode" class="mt-4 bg-red-600 text-white font-bold py-2 px-8 rounded-lg hover:bg-red-700 transition-transform transform hover:scale-105">Salir</button>
+    </div>
+
 
     <script>
     // --- GLOBAL STATE & UTILS ---
@@ -171,27 +213,114 @@
         audiometrySynth: null,
         errorSynth: null,
         panner: null,
-        initAudio() {
-            if (this.audioContext) return; // Already initialized
-            try {
-                if (typeof Tone === 'undefined') {
-                    console.error("Tone.js has not loaded yet.");
-                    return;
-                }
-                this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                Tone.setContext(this.audioContext);
-                this.panner = new Tone.Panner(0).toDestination();
-                // Synth for pure tones in audiometry test, connected to the panner
-                this.audiometrySynth = new Tone.Synth().connect(this.panner);
-                // Synth for UI feedback sounds (e.g., collision)
-                this.errorSynth = new Tone.Synth().toDestination();
-            } catch (e) {
-                console.error("Could not initialize audio:", e);
-                // Disable audio features if it fails
-                this.audioContext = null;
+        isAudioReady: false,
+        async ensureAudio() {
+            if (this.isAudioReady) {
+                return;
             }
+            // This function will only be called by tests that absolutely need audio.
+            return new Promise(async (resolve, reject) => {
+                if (typeof Tone === 'undefined' || !Tone.start) {
+                    const errorMsg = "Tone.js library is not available or loaded correctly.";
+                    console.error(errorMsg);
+                    return reject(new Error(errorMsg));
+                }
+
+                try {
+                    await Tone.start();
+                    this.audioContext = Tone.context;
+                    this.panner = new Tone.Panner(0).toDestination();
+                    this.audiometrySynth = new Tone.Synth().connect(this.panner);
+                    this.errorSynth = new Tone.Synth().toDestination();
+                    this.isAudioReady = true;
+                    console.log("Audio context initialized successfully on user interaction.");
+                    resolve();
+                } catch (e) {
+                    console.error("Could not initialize audio:", e);
+                    this.isAudioReady = false;
+                    reject(e);
+                }
+            });
         }
     };
+
+    const focusModeContainer = document.getElementById('focus-mode');
+    const focusContent = document.getElementById('focus-content');
+    const focusControls = document.getElementById('focus-controls');
+    const exitFocusButton = document.getElementById('exit-focus-mode');
+    const mainContainer = document.getElementById('main-container');
+
+    function enterFocusMode(testObject) {
+        focusContent.appendChild(testObject.interactiveElement);
+        if (testObject.focusControls) {
+            focusControls.appendChild(testObject.focusControls);
+        }
+        mainContainer.classList.add('hidden');
+        focusModeContainer.style.display = 'flex';
+        App.activeTest = testObject;
+        // Defer resize to ensure the element has its new dimensions in the DOM
+        setTimeout(() => {
+            if (testObject.resize) {
+                testObject.resize();
+            }
+        }, 0);
+    }
+
+    function exitFocusMode() {
+        const testObject = App.activeTest;
+        if (!testObject) return;
+
+        if (testObject.originalParent && testObject.interactiveElement) {
+            testObject.originalParent.appendChild(testObject.interactiveElement);
+        }
+        if (testObject.originalControlsParent && testObject.focusControls) {
+            testObject.originalControlsParent.appendChild(testObject.focusControls);
+        }
+
+        focusContent.innerHTML = '';
+        focusControls.innerHTML = '';
+        focusModeContainer.style.display = 'none';
+        mainContainer.classList.remove('hidden');
+        App.activeTest = null;
+        
+        setTimeout(() => {
+            if (testObject.resize) {
+                testObject.resize();
+            }
+        }, 0);
+    }
+
+    function runCountdown(container, onComplete) {
+        const countdownEl = container.querySelector('.countdown-overlay');
+        if (!countdownEl) {
+            onComplete();
+            return;
+        }
+
+        countdownEl.classList.remove('hidden');
+        let count = 3;
+        countdownEl.textContent = count;
+
+        const interval = setInterval(() => {
+            count--;
+            if (count > 0) {
+                countdownEl.textContent = count;
+            } else {
+                clearInterval(interval);
+                countdownEl.textContent = '¡YA!';
+                setTimeout(() => {
+                    countdownEl.classList.add('hidden');
+                    onComplete();
+                }, 500);
+            }
+        }, 1000);
+    }
+
+    exitFocusButton.addEventListener('click', () => {
+        if (App.activeTest && App.activeTest.stop) {
+            App.activeTest.stop(true); // true = manual stop
+        }
+    });
 
     window.addEventListener('keydown', (e) => { App.keys[e.key] = true; });
     window.addEventListener('keyup', (e) => { App.keys[e.key] = false; });
@@ -203,36 +332,35 @@
         document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
         event.target.classList.add('active');
 
-        // Stop any active test when switching tabs
         if (App.activeTest && App.activeTest.stop) {
-            App.activeTest.stop();
+            App.activeTest.stop(true);
         }
     }
 
     // --- 1. PSICOMOTRIZ ---
-
-    // 1.1 Coordinación Bimanual
     const BimanualTest = {
         canvas: document.getElementById('bimanualCanvas'),
+        interactiveElement: document.getElementById('bimanual-interactive-area'),
+        originalParent: document.getElementById('bimanual-placeholder'),
         ctx: null,
         resultsEl: document.getElementById('bimanualResults'),
         rafId: null, running: false, duration: 20000, endTime: 0,
         errors: { left: 0, right: 0 },
         speed: 3,
-        roadWidth: 50, // Increased from 40 to 50
+        roadWidth: 90,
         
-        p1: { x: 0, y: 0, path: [], color: '#3b82f6', isColliding: false },
-        p2: { x: 0, y: 0, path: [], color: '#ef4444', isColliding: false },
+        p1: { x: 0, y: 0, path: [], color: '#3b82f6', isColliding: false, radius: 10 },
+        p2: { x: 0, y: 0, path: [], color: '#ef4444', isColliding: false, radius: 10 },
 
         init() {
             this.ctx = this.canvas.getContext('2d');
             this.resize();
-            window.addEventListener('resize', () => this.resize());
+            window.addEventListener('resize', () => { if(this.running) this.resize() });
             document.getElementById('startBimanual').addEventListener('click', () => this.start());
         },
 
         resize() {
-            const { width, height } = this.canvas.parentElement.getBoundingClientRect();
+            const { width, height } = this.interactiveElement.getBoundingClientRect();
             this.canvas.width = width;
             this.canvas.height = height;
             this.p1.y = this.canvas.height - 30;
@@ -241,10 +369,14 @@
         },
 
         reset() {
-            this.p1.x = this.canvas.width / 4;
-            this.p2.x = this.canvas.width * 3 / 4;
-            this.p1.path = this.generatePath(this.canvas.width / 4);
-            this.p2.path = this.generatePath(this.canvas.width * 3 / 4);
+            const path1_center = this.canvas.width / 4;
+            const path2_center = this.canvas.width * 3 / 4;
+            this.p1.x = path1_center;
+            this.p2.x = path2_center;
+            
+            this.p1.path = this.generatePath(path1_center);
+            this.p2.path = this.generatePath(path2_center);
+            
             this.errors = { left: 0, right: 0 };
             this.resultsEl.textContent = '';
             this.draw();
@@ -255,13 +387,15 @@
             let currentX = startX;
             for (let y = this.canvas.height; y >= -10; y -= 5) {
                 currentX += (Math.random() - 0.5) * 8;
-                currentX = Math.max(this.roadWidth, Math.min(this.canvas.width - this.roadWidth, currentX));
-                 // Clamp to prevent paths from overlapping too much
+                const minX = this.roadWidth / 2;
+                const maxX = this.canvas.width - this.roadWidth / 2;
+                
                 if (startX < this.canvas.width / 2) {
-                    currentX = Math.min(currentX, this.canvas.width / 2 - this.roadWidth);
+                    currentX = Math.min(currentX, this.canvas.width / 2 - this.roadWidth / 2);
                 } else {
-                    currentX = Math.max(currentX, this.canvas.width / 2 + this.roadWidth);
+                    currentX = Math.max(currentX, this.canvas.width / 2 + this.roadWidth / 2);
                 }
+                currentX = Math.max(minX, Math.min(maxX, currentX));
                 path.unshift({ y, x: currentX });
             }
             return path;
@@ -269,66 +403,72 @@
 
         start() {
             if (this.running) return;
-            App.initAudio();
-            App.activeTest = this;
             this.running = true;
-            this.reset();
-            this.endTime = Date.now() + this.duration;
-            this.resultsEl.textContent = '¡En curso!';
-            this.loop();
+            this.reset(); // Reset again right before starting to ensure correct positions
+            enterFocusMode(this);
+            runCountdown(this.interactiveElement, () => {
+                this.endTime = Date.now() + this.duration;
+                this.loop();
+            });
         },
         
-        stop() {
+        stop(manual = false) {
+            if (!this.running) return;
             this.running = false;
             cancelAnimationFrame(this.rafId);
-            const totalErrors = this.errors.left + this.errors.right;
-            this.resultsEl.innerHTML = `Prueba finalizada. <br> Errores Izquierda: ${this.errors.left}, Derecha: ${this.errors.right}. Total: ${totalErrors}`;
-            App.activeTest = null;
+            if (!manual) {
+                const totalErrors = this.errors.left + this.errors.right;
+                this.resultsEl.innerHTML = `Prueba finalizada. <br> Errores Izquierda: ${this.errors.left}, Derecha: ${this.errors.right}. Total: ${totalErrors}`;
+            } else {
+                this.resultsEl.textContent = 'Prueba cancelada.';
+            }
+            exitFocusMode();
         },
 
         update() {
-            // Update player positions
-            if (App.keys['a'] || App.keys['A']) this.p1.x -= 3;
-            if (App.keys['d'] || App.keys['D']) this.p1.x += 3;
-            if (App.keys['ArrowLeft']) this.p2.x -= 3;
-            if (App.keys['ArrowRight']) this.p2.x += 3;
+            if (App.keys['a'] || App.keys['A']) this.p1.x -= 3.5;
+            if (App.keys['d'] || App.keys['D']) this.p1.x += 3.5;
+            if (App.keys['ArrowLeft']) this.p2.x -= 3.5;
+            if (App.keys['ArrowRight']) this.p2.x += 3.5;
 
-            // Update paths (scroll down)
             [this.p1.path, this.p2.path].forEach(path => {
                 path.forEach(seg => seg.y += this.speed);
-                if (path.length > 0 && path[0].y > this.canvas.height) path.shift();
+                if (path.length > 0 && path[0].y > this.canvas.height + 10) path.shift();
                 
                 const lastSeg = path[path.length - 1];
-                if (lastSeg) {
+                if (lastSeg && lastSeg.y > -10) {
                     let newX = lastSeg.x + (Math.random() - 0.5) * 8;
                     const startX = path === this.p1.path ? this.canvas.width / 4 : this.canvas.width * 3 / 4;
+                    const minX = this.roadWidth / 2;
+                    const maxX = this.canvas.width - this.roadWidth / 2;
                     if (startX < this.canvas.width / 2) {
-                        newX = Math.min(newX, this.canvas.width / 2 - this.roadWidth);
+                        newX = Math.min(newX, this.canvas.width / 2 - this.roadWidth / 2);
                     } else {
-                        newX = Math.max(newX, this.canvas.width / 2 + this.roadWidth);
+                        newX = Math.max(newX, this.canvas.width / 2 + this.roadWidth / 2);
                     }
-                    newX = Math.max(this.roadWidth, Math.min(this.canvas.width - this.roadWidth, newX));
+                    newX = Math.max(minX, Math.min(maxX, newX));
                     path.push({ y: lastSeg.y - 5, x: newX });
                 }
             });
 
-            // Check collisions
             this.checkCollision(this.p1, 'left');
             this.checkCollision(this.p2, 'right');
 
-            if (Date.now() > this.endTime) this.stop();
+            if (Date.now() > this.endTime) {
+                this.stop(false);
+            }
         },
 
         checkCollision(player, side) {
             const seg = player.path.find(p => p.y >= player.y);
             if (!seg) return;
             
-            const hasCollided = player.x < seg.x - this.roadWidth / 2 || player.x > seg.x + this.roadWidth / 2;
+            const hasCollided = (player.x - player.radius) < (seg.x - this.roadWidth / 2) || 
+                                (player.x + player.radius) > (seg.x + this.roadWidth / 2);
 
             if (hasCollided && !player.isColliding) {
                 player.isColliding = true;
                 this.errors[side]++;
-                if(App.errorSynth) App.errorSynth.triggerAttackRelease("C5", "8n");
             } else if (!hasCollided) {
                 player.isColliding = false;
             }
@@ -343,7 +483,7 @@
         },
 
         drawPath(path, color) {
-            this.ctx.fillStyle = `${color}33`; // semi-transparent
+            this.ctx.fillStyle = `${color}33`;
             this.ctx.beginPath();
             if(path.length === 0) return;
             this.ctx.moveTo(path[0].x - this.roadWidth / 2, path[0].y);
@@ -356,7 +496,7 @@
         drawPlayer(player) {
             this.ctx.fillStyle = player.color;
             this.ctx.beginPath();
-            this.ctx.arc(player.x, player.y, 10, 0, Math.PI * 2);
+            this.ctx.arc(player.x, player.y, player.radius, 0, Math.PI * 2);
             this.ctx.fill();
         },
 
@@ -368,10 +508,11 @@
         }
     };
 
-    // 1.2 Tiempo de Reacción
     const ReactionTest = {
-        area: document.getElementById('reactionTestArea'),
+        interactiveElement: document.getElementById('reactionTestArea'),
+        originalParent: document.getElementById('reaction-placeholder'),
         resultsEl: document.getElementById('reactionResults'),
+        textEl: null,
         running: false,
         waitingForClick: false,
         startTime: 0,
@@ -380,47 +521,51 @@
         timeoutId: null,
 
         init() {
+            this.textEl = document.getElementById('reaction-text');
             document.getElementById('startReaction').addEventListener('click', () => this.start());
         },
 
-        start() {
+        async start() {
             if (this.running) return;
-            App.activeTest = this;
             this.running = true;
             this.results = [];
             this.resultsEl.textContent = '';
-            this.area.style.backgroundColor = '#1f2937'; // Gray 800
-            window.addEventListener('keydown', this.handleKeyPress);
-            this.nextTest();
+            enterFocusMode(this);
+            runCountdown(this.interactiveElement, () => {
+                window.addEventListener('keydown', this.handleKeyPress);
+                this.nextTest();
+            });
         },
         
-        stop() {
+        stop(manual = false) {
+            if(!this.running) return;
             this.running = false;
             this.waitingForClick = false;
             clearTimeout(this.timeoutId);
             window.removeEventListener('keydown', this.handleKeyPress);
-            if (this.results.length > 0) {
+
+            if (manual) {
+                this.resultsEl.textContent = `Prueba cancelada.`;
+            } else if (this.results.length > 0) {
                 const avg = this.results.reduce((a, b) => a + b, 0) / this.results.length;
                 this.resultsEl.textContent = `Prueba finalizada. Tiempo medio: ${avg.toFixed(0)} ms.`;
-            } else {
-                 this.resultsEl.textContent = `Prueba cancelada.`;
             }
-            this.area.textContent = 'Pulsa "Empezar"';
-            App.activeTest = null;
+            this.textEl.textContent = 'Pulsa "Empezar"';
+            exitFocusMode();
         },
 
         nextTest() {
             if (this.results.length >= this.maxTests) {
-                this.stop();
+                this.stop(false);
                 return;
             }
             this.waitingForClick = false;
-            this.area.style.backgroundColor = '#1f2937'; // Gray 800
-            this.area.textContent = `Prueba ${this.results.length + 1} de ${this.maxTests}. Espera...`;
-            const delay = Math.random() * 4000 + 1000; // 1-5 seconds
+            this.interactiveElement.style.backgroundColor = '#1f2937';
+            this.textEl.textContent = `Prueba ${this.results.length + 1} de ${this.maxTests}. Espera...`;
+            const delay = Math.random() * 3000 + 1000;
             this.timeoutId = setTimeout(() => {
-                this.area.style.backgroundColor = '#ef4444'; // Red 500
-                this.area.textContent = '¡PULSA ESPACIO!';
+                this.interactiveElement.style.backgroundColor = '#ef4444';
+                this.textEl.textContent = '¡PULSA ESPACIO!';
                 this.waitingForClick = true;
                 this.startTime = performance.now();
             }, delay);
@@ -429,28 +574,19 @@
         handleKeyPress: (e) => {
             if (e.key !== ' ') return;
             e.preventDefault();
-            const self = ReactionTest; // 'this' is window here
-            if (!self.running) return;
+            const self = ReactionTest;
+            if (!self.running || !self.waitingForClick) return;
 
-            if (self.waitingForClick) {
-                const reactionTime = performance.now() - self.startTime;
-                self.results.push(reactionTime);
-                self.resultsEl.textContent = `Intento ${self.results.length}: ${reactionTime.toFixed(0)} ms`;
-                self.waitingForClick = false;
-                self.nextTest();
-            } else {
-                // Clicked too early
-                clearTimeout(self.timeoutId);
-                self.area.textContent = '¡Demasiado pronto!';
-                self.waitingForClick = false;
-                setTimeout(() => self.nextTest(), 1500);
-            }
+            const reactionTime = performance.now() - self.startTime;
+            self.results.push(reactionTime);
+            self.waitingForClick = false;
+            self.textEl.textContent = `¡${reactionTime.toFixed(0)} ms!`;
+            
+            setTimeout(() => self.nextTest(), 1000);
         }
     };
     
     // --- 2. VISUAL ---
-    
-    // 2.1 Agudeza Visual
     const SnellenTest = {
         init() {
             document.getElementById('revealSnellen').addEventListener('click', () => {
@@ -460,7 +596,6 @@
         }
     };
 
-    // 2.2 Percepción de Colores (Ishihara)
     const IshiharaTest = {
         container: document.getElementById('ishiharaContainer'),
         input: document.getElementById('ishiharaInput'),
@@ -488,7 +623,6 @@
             const plateEl = document.createElement('div');
             plateEl.className = 'ishihara-plate';
             
-            // Generate background dots
             for (let i = 0; i < 250; i++) {
                 const dot = document.createElement('div');
                 dot.className = 'dot';
@@ -523,8 +657,9 @@
         }
     };
 
-    // 2.3 Campo Visual
     const VisualFieldTest = {
+        interactiveElement: document.getElementById('visualFieldArea'),
+        originalParent: document.getElementById('visual-field-placeholder'),
         stimulus: document.getElementById('visualFieldStimulus'),
         resultEl: document.getElementById('visualFieldResult'),
         running: false,
@@ -538,46 +673,55 @@
             document.getElementById('startVisualField').addEventListener('click', () => this.start());
         },
 
-        start() {
+        async start() {
             if (this.running) return;
-            App.activeTest = this;
             this.running = true;
             this.detected = 0;
             this.shown = 0;
             this.resultEl.textContent = 'Prueba en curso...';
-            window.addEventListener('keydown', this.handleKeyPress);
-            this.nextStimulus();
+            enterFocusMode(this);
+            runCountdown(this.interactiveElement, () => {
+                window.addEventListener('keydown', this.handleKeyPress);
+                this.nextStimulus();
+            });
         },
 
-        stop() {
+        stop(manual = false) {
+            if (!this.running) return;
             this.running = false;
             clearTimeout(this.timeoutId);
             window.removeEventListener('keydown', this.handleKeyPress);
-            this.resultEl.textContent = `Prueba finalizada. Detectados: ${this.detected} de ${this.shown}.`;
-            App.activeTest = null;
+            if(manual) {
+                this.resultEl.textContent = `Prueba cancelada.`;
+            } else {
+                this.resultEl.textContent = `Prueba finalizada. Detectados: ${this.detected} de ${this.shown}.`;
+            }
+            exitFocusMode();
         },
 
         nextStimulus() {
             if (this.shown >= this.maxStimuli) {
-                this.stop();
+                this.stop(false);
                 return;
             }
             this.stimulusVisible = false;
             this.stimulus.classList.add('hidden');
             const delay = Math.random() * 3000 + 1000;
             this.timeoutId = setTimeout(() => {
+                if(!this.running) return;
                 this.shown++;
                 const angle = Math.random() * 2 * Math.PI;
-                const radius = Math.random() * 40 + 50; // pixels from center
-                this.stimulus.style.top = `calc(50% - ${this.stimulus.offsetHeight/2}px + ${Math.sin(angle) * radius}px)`;
-                this.stimulus.style.left = `calc(50% - ${this.stimulus.offsetWidth/2}px + ${Math.cos(angle) * radius}px)`;
+                const radius = (Math.random() * 0.4 + 0.1) * Math.min(this.interactiveElement.offsetWidth, this.interactiveElement.offsetHeight);
+                this.stimulus.style.top = `calc(50% + ${Math.sin(angle) * radius}px)`;
+                this.stimulus.style.left = `calc(50% + ${Math.cos(angle) * radius}px)`;
                 this.stimulus.classList.remove('hidden');
                 this.stimulusVisible = true;
                 
-                // Hide it after a short time and schedule the next one
                 setTimeout(() => {
-                     this.stimulus.classList.add('hidden');
-                     this.stimulusVisible = false;
+                     if (this.stimulusVisible) {
+                        this.stimulus.classList.add('hidden');
+                        this.stimulusVisible = false;
+                     }
                      this.nextStimulus();
                 }, 800);
 
@@ -590,7 +734,7 @@
             const self = VisualFieldTest;
             if (self.stimulusVisible) {
                 self.detected++;
-                self.stimulusVisible = false; // prevent multiple detections for the same stimulus
+                self.stimulusVisible = false;
                 self.stimulus.classList.add('hidden');
             }
         }
@@ -598,14 +742,17 @@
     
     // --- 3. AUDITIVA ---
     const AudiometryTest = {
+        interactiveElement: document.getElementById('audiometryArea'),
+        originalParent: document.getElementById('audiometry-placeholder'),
+        focusControls: document.getElementById('audiometry-focus-controls'),
+        originalControlsParent: document.getElementById('audiometry-placeholder').parentElement,
         statusEl: document.getElementById('audiometryStatus'),
         resultEl: document.getElementById('audiometryResult'),
         startButton: document.getElementById('startAudiometry'),
-        heardButton: document.getElementById('heardToneButton'),
         running: false,
         timeoutId: null,
-        frequencies: [500, 1000, 2000, 4000], // Hz
-        sides: [-1, 1], // Left, Right
+        frequencies: [500, 1000, 2000, 4000],
+        sides: [-1, 1],
         currentTest: 0,
         tests: [],
         results: [],
@@ -613,51 +760,53 @@
 
         init() {
             this.startButton.addEventListener('click', () => this.start());
-            this.heardButton.addEventListener('click', () => { this.heard = true; });
+            document.getElementById('heardToneButton').addEventListener('click', () => { this.heard = true; });
         },
 
-        start() {
+        async start() {
             if (this.running) return;
-            App.initAudio();
-            if (!App.audioContext) {
-                this.statusEl.textContent = 'Error al iniciar el audio.';
-                return;
-            }
-            App.activeTest = this;
-            this.running = true;
-            this.results = [];
-            this.currentTest = 0;
-            this.resultEl.textContent = '';
-            this.startButton.classList.add('hidden');
-            this.heardButton.classList.remove('hidden');
-            
-            // Create test sequence
-            this.tests = [];
-            for (const freq of this.frequencies) {
-                for (const side of this.sides) {
-                    this.tests.push({ freq, side });
+            try {
+                await App.ensureAudio();
+                this.running = true;
+                this.results = [];
+                this.currentTest = 0;
+                this.resultEl.textContent = '';
+                
+                this.tests = [];
+                for (const freq of this.frequencies) {
+                    for (const side of this.sides) {
+                        this.tests.push({ freq, side });
+                    }
                 }
+                this.tests.sort(() => Math.random() - 0.5);
+                
+                enterFocusMode(this);
+                runCountdown(this.interactiveElement, () => {
+                     this.nextTest();
+                });
+            } catch (error) {
+                this.resultEl.textContent = 'Error al iniciar el audio.';
             }
-            // Shuffle tests
-            this.tests.sort(() => Math.random() - 0.5);
-            
-            this.nextTest();
         },
 
-        stop() {
+        stop(manual = false) {
+            if (!this.running) return;
             this.running = false;
             clearTimeout(this.timeoutId);
-            this.heardButton.classList.add('hidden');
-            this.startButton.classList.remove('hidden');
-            this.statusEl.textContent = 'Prueba finalizada';
-            const detectedCount = this.results.filter(r => r.detected).length;
-            this.resultEl.textContent = `Detectados ${detectedCount} de ${this.tests.length} tonos.`;
-            App.activeTest = null;
+            this.statusEl.textContent = 'Listo para empezar';
+
+            if(manual) {
+                this.resultEl.textContent = `Prueba cancelada.`;
+            } else {
+                const detectedCount = this.results.filter(r => r.detected).length;
+                this.resultEl.textContent = `Detectados ${detectedCount} de ${this.tests.length} tonos.`;
+            }
+            exitFocusMode();
         },
 
         nextTest() {
             if (this.currentTest >= this.tests.length) {
-                this.stop();
+                this.stop(false);
                 return;
             }
 
@@ -666,13 +815,14 @@
             this.statusEl.textContent = `Prueba ${this.currentTest + 1}/${this.tests.length}. Escuchando oído ${sideText}...`;
             this.heard = false;
 
-            const delay = Math.random() * 4000 + 2000; // 2-6 sec delay
+            const delay = Math.random() * 4000 + 2000;
             this.timeoutId = setTimeout(() => {
+                if(!this.running) return;
                 App.panner.pan.value = test.side;
                 if(App.audiometrySynth) App.audiometrySynth.triggerAttackRelease(test.freq, '0.5s');
                 
-                // Check if heard after tone finishes
                 setTimeout(() => {
+                    if(!this.running) return;
                     this.results.push({ ...test, detected: this.heard });
                     this.currentTest++;
                     this.nextTest();
@@ -683,15 +833,31 @@
     };
 
     // --- INITIALIZE ALL TESTS ---
-    window.addEventListener('DOMContentLoaded', () => {
+    const initializeApp = () => {
+        // Initialize all non-audio components first
         BimanualTest.init();
         ReactionTest.init();
         SnellenTest.init();
         IshiharaTest.init();
         VisualFieldTest.init();
         AudiometryTest.init();
-    });
 
+        // Enable buttons and update status texts
+        document.querySelectorAll('.start-button').forEach(button => {
+            button.disabled = false;
+            const buttonId = button.id;
+            if (buttonId === 'startBimanual') button.textContent = 'Empezar';
+            if (buttonId === 'startReaction') button.textContent = 'Empezar';
+            if (buttonId === 'startVisualField') button.textContent = 'Empezar';
+            if (buttonId === 'startAudiometry') button.textContent = 'Empezar Prueba';
+        });
+        document.getElementById('reaction-text').textContent = 'Pulsa "Empezar"';
+        document.getElementById('audiometryStatus').textContent = 'Listo para empezar';
+    };
+
+    // This is a more robust way to wait for the page and all its resources to be fully loaded.
+    window.addEventListener('load', initializeApp);
+    
     </script>
 </body>
 </html>
